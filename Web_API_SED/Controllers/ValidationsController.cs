@@ -8,12 +8,12 @@ namespace Web_API_SED.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class Validations : Controller
+    public class ValidationsController : Controller
     {
         private readonly HttpClient _httpClient;
         private readonly string _urlBaseHomologacao = "https://homologacaointegracaosed.educacao.sp.gov.br/ncaapi/api";
 
-        public Validations()
+        public ValidationsController()
         {
             _httpClient = new HttpClient();
         }
@@ -26,6 +26,8 @@ namespace Web_API_SED.Controllers
             if (!ModelState.IsValid) return BadRequest("Por favor, informe os de login!");
 
             string credenciais = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{loginData.username}:{loginData.password}"));
+
+
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credenciais);
             HttpResponseMessage response = await _httpClient.GetAsync($"{_urlBaseHomologacao}/Usuario/ValidarUsuario");
 
@@ -35,18 +37,16 @@ namespace Web_API_SED.Controllers
                 string conteudoResposta = await response.Content.ReadAsStringAsync();
                 var Json = JObject.Parse(conteudoResposta);
                 var token = Json["outAutenticacao"].ToString();
-                HttpContext.Session.SetString("Token", token); //Expira em 30 min...
-                HttpContext.Session.SetString("UserDataBase", credenciais); // Salvar para usar quando o token expirar
+                TempData["Token"] = token; //Expira em 30 min...
+                TempData["Credenciais"] = credenciais; // Salvar para usar quando o token expirar
 
-
-                return Ok(loginData);
+                return Ok(token);
             }
             else
             {
                 return StatusCode((int)response.StatusCode);
             }
 
-            return Ok(loginData);
         }
     }
 }
