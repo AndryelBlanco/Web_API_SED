@@ -1,5 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
+using System.Text;
+using Web_API_SED.Entities;
 
 namespace Web_API_SED.Controllers
 {
@@ -9,30 +14,56 @@ namespace Web_API_SED.Controllers
     {
         private readonly HttpClient _httpClient;
         private readonly string _urlBaseHomologacao = "https://homologacaointegracaosed.educacao.sp.gov.br/ncaapi/api";
-        public AlunosController()
+        private readonly IMemoryCache _cache;
+
+        public AlunosController(IMemoryCache cache)
         {
             _httpClient = new HttpClient();
+            _cache = cache;
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("/Listar")]
-        public async Task<IActionResult> Listar()
+        public async Task<IActionResult> Listar([FromBody] List<string> alunosNomes)
         {
 
-            string Token = TempData["Token"] as string;
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-            HttpResponseMessage response = await _httpClient.GetAsync($"{_urlBaseHomologacao}/Aluno/ListarAlunos");
-
-            if (response.IsSuccessStatusCode)
+            try
             {
+                string Token;
+                if (!_cache.TryGetValue("Token", out Token))
+                {
+                    return BadRequest("O token expirou");
+                }
+                else
+                {
+                    if (alunosNomes.Count == 0) return BadRequest("Informe ao menos um Aluno no padrão ['Nome Aluno Completo']");
 
-                string conteudoResposta = await response.Content.ReadAsStringAsync();
+                    List<string> alunos = new List<string>();
 
-                return Ok(Token);
+                    foreach(var nome in alunosNomes)
+                    {
+                        string nomeFormatado = Uri.EscapeUriString(nome);
+                        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+                        HttpResponseMessage response = await _httpClient.GetAsync($"{_urlBaseHomologacao}/Aluno/ListarAlunos?inNomeAluno={nomeFormatado}");
+
+                        if (response.IsSuccessStatusCode)
+                        {
+
+                            string responseString = await response.Content.ReadAsStringAsync();
+                            alunos.Add(responseString);
+                        }
+                        else
+                        {
+                            return BadRequest("Aconteceu um Erro!");
+                        }
+                    }
+                    return Ok("BELEZA");
+                }
+
             }
-            else
+            catch (Exception ex)
             {
-                return StatusCode((int)response.StatusCode);
+                return BadRequest("O Usuário não foi validado. Por favor faça a requisição para a API de validação!");
             }
         }
     }

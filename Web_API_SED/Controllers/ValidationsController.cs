@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text;
@@ -12,10 +13,12 @@ namespace Web_API_SED.Controllers
     {
         private readonly HttpClient _httpClient;
         private readonly string _urlBaseHomologacao = "https://homologacaointegracaosed.educacao.sp.gov.br/ncaapi/api";
+        private readonly IMemoryCache _cache;
 
-        public ValidationsController()
+        public ValidationsController(IMemoryCache cache)
         {
             _httpClient = new HttpClient();
+            _cache = cache;
         }
 
         [HttpPost]
@@ -36,11 +39,18 @@ namespace Web_API_SED.Controllers
                
                 string conteudoResposta = await response.Content.ReadAsStringAsync();
                 var Json = JObject.Parse(conteudoResposta);
-                var token = Json["outAutenticacao"].ToString();
-                TempData["Token"] = token; //Expira em 30 min...
-                TempData["Credenciais"] = credenciais; // Salvar para usar quando o token expirar
+                try
+                {
+                    var token = Json["outAutenticacao"].ToString();
+                    _cache.Set("Token", token, TimeSpan.FromMinutes(30));
+                    _cache.Set("Credenciais", credenciais, TimeSpan.FromMinutes(60)); //Salva para quando o token expirar
 
-                return Ok(token);
+                    return Ok(token);
+                }catch (Exception ex)
+                {
+                    return BadRequest(ex.Message); 
+                }
+
             }
             else
             {
