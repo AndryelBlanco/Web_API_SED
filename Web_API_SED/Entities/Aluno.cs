@@ -35,4 +35,16 @@ namespace Web_API_SED.Entities
       
 
     }
+
+    public class ListaAlunos
+    {
+        public List<Aluno> outListAlunos { get; set; }
+    }
+
+    public class ListAlunosResponse
+    {
+        public List<Aluno> outListaAlunos { set; get; }
+        public string outProcessoID { set; get; }
+    }
+
 }

@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using CsvHelper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using Web_API_SED.Entities;
@@ -38,9 +40,9 @@ namespace Web_API_SED.Controllers
                 {
                     if (alunosNomes.Count == 0) return BadRequest("Informe ao menos um Aluno no padrão ['Nome Aluno Completo']");
 
-                    List<string> alunos = new List<string>();
+                    List<Aluno> AlunosCSV = new List<Aluno>();
 
-                    foreach(var nome in alunosNomes)
+                    foreach (var nome in alunosNomes)
                     {
                         string nomeFormatado = Uri.EscapeUriString(nome);
                         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
@@ -50,20 +52,41 @@ namespace Web_API_SED.Controllers
                         {
 
                             string responseString = await response.Content.ReadAsStringAsync();
-                            alunos.Add(responseString);
+                            var Json = JsonConvert.DeserializeObject<ListAlunosResponse>(responseString);
+
+                            foreach (Aluno aluno in Json.outListaAlunos)
+                            {
+                                AlunosCSV.Add(aluno);
+                            }
+
                         }
                         else
                         {
                             return BadRequest("Aconteceu um Erro!");
                         }
                     }
-                    return Ok("BELEZA");
+
+                    using var stream = new MemoryStream();
+                    using var writer = new StreamWriter(stream, Encoding.UTF8);
+                    using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+                    object p = csv.Context.RegisterClassMap<AlunoMap>(); // configurações do mapeamento do CSV
+                    csv.WriteRecords(AlunosCSV);
+                    await writer.FlushAsync();
+                    stream.Seek(0, SeekOrigin.Begin);
+                    var csvContent = stream.ToArray();
+
+                    var result = new FileContentResult(csvContent, "text/csv")
+                    {
+                        FileDownloadName = "alunos.csv"
+                    };
+
+                    return result;
                 }
 
             }
             catch (Exception ex)
             {
-                return BadRequest("O Usuário não foi validado. Por favor faça a requisição para a API de validação!");
+                return BadRequest(ex.Message);
             }
         }
     }
