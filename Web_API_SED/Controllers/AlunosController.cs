@@ -29,6 +29,8 @@ namespace Web_API_SED.Controllers
         public async Task<IActionResult> Listar([FromBody] List<string> alunosNomes)
         {
 
+            //Por padrão, cadastramos os seguintes alunos e esses devem ser usados para testes ["ISAAC MONTANHEZ DO NASCIMENTO", "HUGO MURILO DOS SANTOS PEREIRA", "VITORIA RODRIGUES GUEDES", "DEBORA MARIA BUENO RODRIGUES", "JAMILLY VITORIA CARVALHO DO CARMO RODRIGUES"] 
+
             try
             {
                 string Token;
@@ -52,6 +54,10 @@ namespace Web_API_SED.Controllers
                         {
 
                             string responseString = await response.Content.ReadAsStringAsync();
+                            if (responseString.Contains("outErro"))
+                            {
+                                continue;
+                            }
                             var Json = JsonConvert.DeserializeObject<ListAlunosResponse>(responseString);
 
                             foreach (Aluno aluno in Json.outListaAlunos)
