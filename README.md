@@ -16,10 +16,9 @@ Uma breve descrição de como utilizar e testar o projeto.
 ```
 
 - Devem ser passados no body:
-| Parâmetro   | Tipo       | Descrição                           |
-| :---------- | :--------- | :---------------------------------- |
-| `username` | `string` | **Obrigatório**. O Username fornecido |
-| `password` | `string` | **Obrigatório**. A Password fornecida |
+
+ username - string - **Obrigatório**. O Username fornecido  </br>
+ password - string - **Obrigatório**. A Password fornecida 
 
 #### Retorna os alunos correspondentes aos nomes fornecidos no body em CSV
 
@@ -27,8 +26,7 @@ Uma breve descrição de como utilizar e testar o projeto.
   Post /Listar
 ```
 - Devem ser passados no body:
-| Parâmetro   | Tipo       | Descrição                                   |
-| :---------- | :--------- | :------------------------------------------ |
-| `[]`      | `[]` | **Obrigatório**. Nomes completos em um array, exemplo ["Nome completo um", "Nome completo dois", "Nome completo tres"] |
+
+ `[]` - **Obrigatório**. Nomes completos em um array, exemplo ["Nome completo um", "Nome completo dois", "Nome completo tres"] 
 
 
